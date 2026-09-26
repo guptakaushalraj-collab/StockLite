@@ -9,6 +9,7 @@ import {
   isLowStock,
 } from '@/lib/types'
 import StatusBadge from '@/components/StatusBadge'
+import LowStockSummary from '@/components/LowStockSummary'
 
 export default function InventoryTable({
   products,
@@ -25,25 +26,38 @@ export default function InventoryTable({
     warehouses.find((w) => w.id === id)?.name ?? id
 
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedWarehouse, setSelectedWarehouse] = useState('all')
   const [lowStockOnly, setLowStockOnly] = useState(false)
 
   const visibleProducts = useMemo(() => {
     return products.filter((p) => {
       if (selectedCategory !== 'all' && p.category !== selectedCategory)
         return false
+      if (selectedWarehouse !== 'all' && p.warehouseId !== selectedWarehouse)
+        return false
       if (lowStockOnly && !isLowStock(p)) return false
       return true
     })
-  }, [products, selectedCategory, lowStockOnly])
+  }, [products, selectedCategory, selectedWarehouse, lowStockOnly])
 
   const lowStockCount = useMemo(
     () => products.filter(isLowStock).length,
     [products],
   )
-  const filtersActive = selectedCategory !== 'all' || lowStockOnly
+  const filtersActive =
+    selectedCategory !== 'all' || selectedWarehouse !== 'all' || lowStockOnly
   const clearFilters = () => {
     setSelectedCategory('all')
+    setSelectedWarehouse('all')
     setLowStockOnly(false)
+  }
+  const showLowStockFor = (warehouseId: string) => {
+    setSelectedCategory('all')
+    setSelectedWarehouse(warehouseId)
+    setLowStockOnly(true)
+    document
+      .getElementById('inventory-filters')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
@@ -63,13 +77,21 @@ export default function InventoryTable({
         </div>
         <div className="summary-tile">
           <div className="value">
-            {products.reduce((sum, p) => sum + p.currentStock, 0)}
+            {products
+              .reduce((sum, p) => sum + p.currentStock, 0)
+              .toLocaleString('en-US')}
           </div>
           <div className="label">Units on hand</div>
         </div>
       </div>
 
-      <div className="filter-bar">
+      <LowStockSummary
+        products={products}
+        warehouses={warehouses}
+        onShow={showLowStockFor}
+      />
+
+      <div className="filter-bar" id="inventory-filters">
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
@@ -79,6 +101,19 @@ export default function InventoryTable({
           {categories.map((c) => (
             <option key={c} value={c}>
               {c}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={selectedWarehouse}
+          onChange={(e) => setSelectedWarehouse(e.target.value)}
+          aria-label="Filter by warehouse"
+        >
+          <option value="all">All warehouses</option>
+          {warehouses.map((w) => (
+            <option key={w.id} value={w.id}>
+              {w.name}
             </option>
           ))}
         </select>
@@ -117,11 +152,9 @@ export default function InventoryTable({
           <div className="empty-state">
             <h3>No products match these filters</h3>
             <p>
-              {lowStockOnly && selectedCategory !== 'all'
-                ? `Nothing in ${selectedCategory} is at or below its reorder threshold.`
-                : lowStockOnly
-                  ? 'No products are at or below their reorder threshold.'
-                  : 'Try a different category.'}
+              {lowStockOnly
+                ? 'No products in this selection are at or below their reorder threshold.'
+                : 'Try a different category or warehouse.'}
             </p>
             <button
               type="button"

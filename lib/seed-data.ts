@@ -276,13 +276,21 @@ export function recordTransaction(input: {
 // -------------------------------------------------------------------------
 
 // Stock is counted in whole units, so a valid quantity is a positive integer.
+// Safe integers only: beyond 2^53 addition silently loses precision and the
+// stock totals would be wrong.
 export function assertValidQuantity(quantity: unknown): asserts quantity is number {
   if (
     typeof quantity !== 'number' ||
-    !Number.isInteger(quantity) ||
+    !Number.isSafeInteger(quantity) ||
     quantity <= 0
   ) {
     throw new Error('Quantity must be a whole number greater than 0')
+  }
+}
+
+function assertCanAdd(product: Product, quantity: number) {
+  if (!Number.isSafeInteger(product.currentStock + quantity)) {
+    throw new Error('Quantity is too large for this product')
   }
 }
 
@@ -302,6 +310,7 @@ export function applyStockMovement(
       `Only ${product.currentStock} in stock — cannot stock out ${quantity}`,
     )
   }
+  if (direction === 'IN') assertCanAdd(product, quantity)
 
   product.currentStock += direction === 'IN' ? quantity : -quantity
 
@@ -363,6 +372,7 @@ export function applyTransfer(
   }
 
   let destination = findProductInWarehouse(source, destWarehouseId)
+  if (destination) assertCanAdd(destination, quantity)
   if (!destination) {
     destination = {
       id: nextProductId(),

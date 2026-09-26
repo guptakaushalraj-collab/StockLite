@@ -521,6 +521,107 @@ tbody tr:last-child td {
   margin: 0;
 }
 
+/* Low stock summary panel (inventory page) */
+.low-stock-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.low-stock-card {
+  background: var(--white);
+  border: 1px solid var(--steel-light);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.low-stock-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.low-stock-card-head h3 {
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.low-stock-card-head p {
+  font-size: 12px;
+  color: var(--steel);
+  margin: 2px 0 0;
+}
+
+.low-stock-count {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--moss);
+}
+
+.low-stock-count.has-low {
+  color: var(--rust);
+}
+
+.low-stock-breakdown,
+.low-stock-none {
+  font-size: 12.5px;
+  color: var(--steel);
+  margin: 10px 0 8px;
+}
+
+.low-stock-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.low-stock-list li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 0;
+  border-top: 1px solid var(--paper-dim);
+}
+
+.low-stock-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.low-stock-qty {
+  font-variant-numeric: tabular-nums;
+  color: var(--steel);
+}
+
+.status-dot-critical {
+  background: var(--rust);
+}
+
+.status-dot-low {
+  background: var(--brass);
+}
+
+.low-stock-show {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+#inventory-filters {
+  scroll-margin-top: 16px;
+}
+
 /* Summary strip on inventory page */
 .summary-strip {
   display: grid;
