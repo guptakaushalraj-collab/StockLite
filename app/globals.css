@@ -495,6 +495,13 @@ tbody tr:last-child td {
   flex-wrap: wrap;
 }
 
+/* Visible-row count in the filter bar */
+.filter-count {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--steel);
+}
+
 /* Empty state */
 .empty-state {
   padding: 60px 20px;

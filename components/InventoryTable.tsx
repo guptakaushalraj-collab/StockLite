@@ -6,6 +6,7 @@ import {
   Warehouse,
   getStockStatus,
   getStockStatusLabel,
+  isLowStock,
 } from '@/lib/types'
 import StatusBadge from '@/components/StatusBadge'
 
@@ -30,10 +31,20 @@ export default function InventoryTable({
     return products.filter((p) => {
       if (selectedCategory !== 'all' && p.category !== selectedCategory)
         return false
-      if (lowStockOnly && p.currentStock > p.reorderThreshold) return false
+      if (lowStockOnly && !isLowStock(p)) return false
       return true
     })
   }, [products, selectedCategory, lowStockOnly])
+
+  const lowStockCount = useMemo(
+    () => products.filter(isLowStock).length,
+    [products],
+  )
+  const filtersActive = selectedCategory !== 'all' || lowStockOnly
+  const clearFilters = () => {
+    setSelectedCategory('all')
+    setLowStockOnly(false)
+  }
 
   return (
     <>
@@ -78,15 +89,48 @@ export default function InventoryTable({
             checked={lowStockOnly}
             onChange={(e) => setLowStockOnly(e.target.checked)}
           />
-          Low stock only
+          Low stock only ({lowStockCount})
         </label>
+
+        {filtersActive && (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={clearFilters}
+          >
+            Clear filters
+          </button>
+        )}
+
+        <span className="filter-count" aria-live="polite">
+          Showing {visibleProducts.length} of {products.length} products
+        </span>
       </div>
 
       <div className="panel table-panel">
-        {visibleProducts.length === 0 ? (
+        {products.length === 0 ? (
+          <div className="empty-state">
+            <h3>No products in inventory yet</h3>
+            <p>Products will appear here once stock is added.</p>
+          </div>
+        ) : visibleProducts.length === 0 ? (
           <div className="empty-state">
             <h3>No products match these filters</h3>
-            <p>Try a different category or clear the low stock filter.</p>
+            <p>
+              {lowStockOnly && selectedCategory !== 'all'
+                ? `Nothing in ${selectedCategory} is at or below its reorder threshold.`
+                : lowStockOnly
+                  ? 'No products are at or below their reorder threshold.'
+                  : 'Try a different category.'}
+            </p>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ marginTop: 14 }}
+              onClick={clearFilters}
+            >
+              Clear filters
+            </button>
           </div>
         ) : (
           <div className="table-scroll" tabIndex={0} aria-label="Inventory table">
