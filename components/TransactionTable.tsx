@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Transaction, Warehouse } from '@/lib/types'
+import { pickTransactions, useLiveData } from '@/components/useLiveData'
 
 const TYPE_LABELS: Record<string, string> = {
   IN: 'Stock in',
@@ -51,12 +52,17 @@ function Timestamp({ iso }: { iso: string }) {
 }
 
 export default function TransactionTable({
-  transactions,
+  transactions: initialTransactions,
   warehouses,
 }: {
   transactions: Transaction[]
   warehouses: Warehouse[]
 }) {
+  const [transactions] = useLiveData(
+    '/api/transactions',
+    pickTransactions,
+    initialTransactions,
+  )
   const [typeFilter, setTypeFilter] = useState('all')
   const [warehouseFilter, setWarehouseFilter] = useState('all')
 

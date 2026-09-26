@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Product, Warehouse } from '@/lib/types'
+import { pickProducts, useLiveData } from '@/components/useLiveData'
 
 export default function TransferForm({
   products: initialProducts,
@@ -12,7 +13,11 @@ export default function TransferForm({
   warehouses: Warehouse[]
 }) {
   const router = useRouter()
-  const [products, setProducts] = useState(initialProducts)
+  const [products, setProducts] = useLiveData(
+    '/api/items',
+    pickProducts,
+    initialProducts,
+  )
   const [sourceWarehouseId, setSourceWarehouseId] = useState(
     warehouses[0]?.id ?? '',
   )
