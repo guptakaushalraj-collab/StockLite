@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Product } from '@/lib/types'
+import { Product, Warehouse } from '@/lib/types'
 
 export default function StockForm({
   products: initialProducts,
+  warehouses,
 }: {
   products: Product[]
+  warehouses: Warehouse[]
 }) {
   const [products, setProducts] = useState(initialProducts)
   const [productId, setProductId] = useState(initialProducts[0]?.id ?? '')
@@ -16,14 +18,20 @@ export default function StockForm({
   const [submitting, setSubmitting] = useState(false)
 
   const selectedProduct = products.find((p) => p.id === productId)
+  const warehouseName = (id: string) =>
+    warehouses.find((w) => w.id === id)?.name ?? id
 
   async function submitMovement(direction: 'IN' | 'OUT') {
     setError('')
     setSuccess('')
 
     const parsedQuantity = Number(quantity)
-    if (!quantity || !Number.isFinite(parsedQuantity) || parsedQuantity <= 0) {
-      setError('Enter a quantity greater than 0.')
+    if (
+      quantity.trim() === '' ||
+      !Number.isInteger(parsedQuantity) ||
+      parsedQuantity <= 0
+    ) {
+      setError('Enter a whole number greater than 0.')
       return
     }
     if (
@@ -54,9 +62,9 @@ export default function StockForm({
         setError(data.error ?? 'Something went wrong.')
         return
       }
-      setProducts((prev) =>
-        prev.map((p) => (p.id === data.product.id ? data.product : p)),
-      )
+      // Replace the whole list with the server's copy so every option shows
+      // the latest on-hand count, not just the product that changed.
+      setProducts(data.products)
       setSuccess(
         `${direction === 'IN' ? 'Stocked in' : 'Stocked out'} ${parsedQuantity} unit${parsedQuantity === 1 ? '' : 's'} of ${data.product.name}.`,
       )
@@ -80,7 +88,8 @@ export default function StockForm({
           >
             {products.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.name} — {p.warehouseId} ({p.currentStock} on hand)
+                {p.name} — {warehouseName(p.warehouseId)} ({p.currentStock} on
+                hand)
               </option>
             ))}
           </select>
@@ -92,6 +101,7 @@ export default function StockForm({
             id="quantity"
             type="number"
             min={1}
+            step={1}
             placeholder="0"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}

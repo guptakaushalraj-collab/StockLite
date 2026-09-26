@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { transactions } from '@/lib/seed-data'
 
+// Always read the live in-memory store; never serve a build-time snapshot.
+export const dynamic = 'force-dynamic'
+
 // GET /api/transactions — returns the transaction log.
 // New transactions are appended here as a side effect of POST /api/items
 // (stock in/out and transfers both log through lib/seed-data.ts), so this

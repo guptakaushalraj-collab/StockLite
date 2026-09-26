@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server'
 import { applyStockMovement, applyTransfer, products } from '@/lib/seed-data'
 
+// Always read the live in-memory store; never serve a build-time snapshot.
+export const dynamic = 'force-dynamic'
+
+// Accept a JSON number or a numeric string; anything else (null, booleans,
+// empty strings, "abc") becomes NaN so validation rejects it instead of
+// silently coercing it to 0 or 1.
+function parseQuantity(value: unknown): number {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string' && value.trim() !== '') return Number(value)
+  return NaN
+}
+
 export async function GET() {
   return NextResponse.json({ products })
 }
@@ -19,7 +31,7 @@ export async function POST(request: Request) {
     if (action === 'stock') {
       const { productId, quantity, direction } = body as {
         productId: string
-        quantity: number
+        quantity: unknown
         direction: 'IN' | 'OUT'
       }
       if (direction !== 'IN' && direction !== 'OUT') {
@@ -28,7 +40,11 @@ export async function POST(request: Request) {
           { status: 400 },
         )
       }
-      const product = applyStockMovement(productId, Number(quantity), direction)
+      const product = applyStockMovement(
+        productId,
+        parseQuantity(quantity),
+        direction,
+      )
       return NextResponse.json({ product, products })
     }
 
@@ -36,12 +52,12 @@ export async function POST(request: Request) {
       const { productId, destWarehouseId, quantity } = body as {
         productId: string
         destWarehouseId: string
-        quantity: number
+        quantity: unknown
       }
       const { source, destination } = applyTransfer(
         productId,
         destWarehouseId,
-        Number(quantity),
+        parseQuantity(quantity),
       )
       return NextResponse.json({ source, destination, products })
     }
