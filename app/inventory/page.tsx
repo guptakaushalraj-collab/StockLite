@@ -1,10 +1,12 @@
 import DashboardShell from '@/components/DashboardShell'
 import InventoryTable from '@/components/InventoryTable'
-import { products, warehouses } from '@/lib/seed-data'
+import { listProducts, warehouses } from '@/lib/store'
 
 export const dynamic = 'force-dynamic'
 
-export default function InventoryPage() {
+export default async function InventoryPage() {
+  const products = await listProducts()
+
   return (
     <DashboardShell>
       <div className="page-header">

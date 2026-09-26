@@ -5,6 +5,11 @@ import {
   IconTransfer,
   IconHistory,
 } from '@/components/Sidebar'
+import { listProducts, warehouses } from '@/lib/store'
+import { isLowStock } from '@/lib/types'
+
+// Hero stats read the live store, so render per request.
+export const dynamic = 'force-dynamic'
 
 const QUICK_LINKS = [
   {
@@ -34,7 +39,18 @@ const QUICK_LINKS = [
   },
 ]
 
-export default function HomePage() {
+export default async function HomePage() {
+  const products = await listProducts()
+  const featured = warehouses[0]
+  const featuredProducts = products.filter(
+    (p) => p.warehouseId === featured?.id,
+  )
+  const featuredUnits = featuredProducts.reduce(
+    (sum, p) => sum + p.currentStock,
+    0,
+  )
+  const lowStockCount = products.filter(isLowStock).length
+
   return (
     <>
       <nav className="marketing-nav">
@@ -66,8 +82,10 @@ export default function HomePage() {
 
         <div className="hero-visual">
           <div className="floating-panel" style={{ marginTop: 40 }}>
-            <h4>North Distribution Center</h4>
-            <div className="big-stat">1,842 units</div>
+            <h4>{featured?.name}</h4>
+            <div className="big-stat">
+              {featuredUnits.toLocaleString('en-US')} units
+            </div>
             <p
               style={{
                 fontSize: 12.5,
@@ -75,11 +93,12 @@ export default function HomePage() {
                 margin: '4px 0 0',
               }}
             >
-              +6.2% since last transfer
+              across {featuredProducts.length} products
             </p>
           </div>
           <div className="floating-chip" style={{ top: '18%', left: '8%' }}>
-            ⚠ 4 items near reorder threshold
+            ⚠ {lowStockCount} item{lowStockCount === 1 ? '' : 's'} at or
+            below reorder threshold
           </div>
           <div
             className="floating-chip"

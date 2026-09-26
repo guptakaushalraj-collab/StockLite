@@ -1,10 +1,12 @@
 import DashboardShell from '@/components/DashboardShell'
 import TransactionTable from '@/components/TransactionTable'
-import { transactions } from '@/lib/seed-data'
+import { listTransactions, warehouses } from '@/lib/store'
 
 export const dynamic = 'force-dynamic'
 
-export default function HistoryPage() {
+export default async function HistoryPage() {
+  const transactions = await listTransactions()
+
   return (
     <DashboardShell>
       <div className="page-header">
@@ -13,7 +15,10 @@ export default function HistoryPage() {
           <p>A record of every stock movement across warehouses.</p>
         </div>
       </div>
-      <TransactionTable transactions={transactions} />
+      <TransactionTable
+        transactions={transactions}
+        warehouses={warehouses}
+      />
     </DashboardShell>
   )
 }
