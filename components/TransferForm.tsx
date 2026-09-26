@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Product, Warehouse } from '@/lib/types'
 
 export default function TransferForm({
@@ -10,6 +11,7 @@ export default function TransferForm({
   products: Product[]
   warehouses: Warehouse[]
 }) {
+  const router = useRouter()
   const [products, setProducts] = useState(initialProducts)
   const [sourceWarehouseId, setSourceWarehouseId] = useState(
     warehouses[0]?.id ?? '',
@@ -92,6 +94,9 @@ export default function TransferForm({
       // The server's list includes the destination row, even if the
       // transfer just created it.
       setProducts(data.products)
+      // Drop Next's cached copies of other pages so Inventory and History
+      // show this change when navigated to.
+      router.refresh()
       setSuccess(
         `Transferred ${parsedQuantity} unit${parsedQuantity === 1 ? '' : 's'} of ${data.source.name} to ${warehouseName(data.destination.warehouseId)}.`,
       )

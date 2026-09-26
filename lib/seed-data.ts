@@ -9,7 +9,7 @@ export const warehouses: Warehouse[] = [
   { id: 'wh-south', name: 'South Fulfillment Hub', location: 'Waco, TX' },
 ]
 
-export const products: Product[] = [
+const seedProducts: Product[] = [
   {
     id: 'p-001',
     name: 'Corrugated Shipping Box (M)',
@@ -173,7 +173,7 @@ export const products: Product[] = [
 ]
 
 // A few sample transactions so the History page isn't empty on first load.
-export const transactions: Transaction[] = [
+const seedTransactions: Transaction[] = [
   {
     id: 't-001',
     productId: 'p-002',
@@ -218,7 +218,26 @@ export const transactions: Transaction[] = [
   },
 ]
 
-let nextTransactionSeq = transactions.length + 1
+// In dev, Next can load this module more than once (one copy per route
+// bundle), and each copy would get its own arrays, so a write from an API
+// route could be invisible to a page. Keep the live store on globalThis so
+// every copy shares one set of data.
+type Store = {
+  products: Product[]
+  transactions: Transaction[]
+  nextTransactionSeq: number
+}
+const globalForStore = globalThis as typeof globalThis & {
+  __stockliteStore?: Store
+}
+const store: Store = (globalForStore.__stockliteStore ??= {
+  products: seedProducts,
+  transactions: seedTransactions,
+  nextTransactionSeq: seedTransactions.length + 1,
+})
+
+export const products = store.products
+export const transactions = store.transactions
 
 function warehouseName(id: string) {
   return warehouses.find((w) => w.id === id)?.name ?? id
@@ -238,7 +257,7 @@ export function recordTransaction(input: {
   timestamp?: string
 }): Transaction {
   const tx: Transaction = {
-    id: `t-${String(nextTransactionSeq++).padStart(3, '0')}`,
+    id: `t-${String(store.nextTransactionSeq++).padStart(3, '0')}`,
     productId: input.productId,
     productName: input.productName,
     warehouseId: input.warehouseId,

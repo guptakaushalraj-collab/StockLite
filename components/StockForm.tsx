@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Product, Warehouse } from '@/lib/types'
 
 export default function StockForm({
@@ -10,6 +11,7 @@ export default function StockForm({
   products: Product[]
   warehouses: Warehouse[]
 }) {
+  const router = useRouter()
   const [products, setProducts] = useState(initialProducts)
   const [productId, setProductId] = useState(initialProducts[0]?.id ?? '')
   const [quantity, setQuantity] = useState('')
@@ -65,6 +67,9 @@ export default function StockForm({
       // Replace the whole list with the server's copy so every option shows
       // the latest on-hand count, not just the product that changed.
       setProducts(data.products)
+      // Drop Next's cached copies of other pages so Inventory and History
+      // show this change when navigated to.
+      router.refresh()
       setSuccess(
         `${direction === 'IN' ? 'Stocked in' : 'Stocked out'} ${parsedQuantity} unit${parsedQuantity === 1 ? '' : 's'} of ${data.product.name}.`,
       )
