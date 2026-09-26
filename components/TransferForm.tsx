@@ -38,22 +38,38 @@ export default function TransferForm({
     }
   }
 
-  const selectedProduct = products.find((p) => p.id === productId)
+  const selectedProduct = sourceProducts.find((p) => p.id === productId)
+  const warehouseName = (id: string) =>
+    warehouses.find((w) => w.id === id)?.name ?? id
 
-  // TASK 3: This currently sends the transfer request with no validation at
-  // all, and doesn't update the UI afterward. Add checks before calling the
-  // API:
-  //   - source and destination warehouses must be different
-  //   - a product must be selected
-  //   - quantity must be a positive number and <= selectedProduct.currentStock
-  // Then, after a successful response, update `products` state using
-  // data.source and data.destination (add the destination row if it's new).
   async function handleTransfer(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     setSuccess('')
 
     const parsedQuantity = Number(quantity)
+    if (sourceWarehouseId === destWarehouseId) {
+      setError('Source and destination warehouses must be different.')
+      return
+    }
+    if (!selectedProduct) {
+      setError('Select a product to transfer.')
+      return
+    }
+    if (
+      quantity.trim() === '' ||
+      !Number.isInteger(parsedQuantity) ||
+      parsedQuantity <= 0
+    ) {
+      setError('Enter a whole number greater than 0.')
+      return
+    }
+    if (parsedQuantity > selectedProduct.currentStock) {
+      setError(
+        `Only ${selectedProduct.currentStock} in stock at the source — cannot transfer more than that.`,
+      )
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -73,10 +89,11 @@ export default function TransferForm({
         return
       }
 
-      // TODO: update `products` state with data.source and data.destination
-
+      // The server's list includes the destination row, even if the
+      // transfer just created it.
+      setProducts(data.products)
       setSuccess(
-        `Transferred ${parsedQuantity} unit${parsedQuantity === 1 ? '' : 's'} of ${data.source.name} to the destination warehouse.`,
+        `Transferred ${parsedQuantity} unit${parsedQuantity === 1 ? '' : 's'} of ${data.source.name} to ${warehouseName(data.destination.warehouseId)}.`,
       )
       setQuantity('')
     } catch {
@@ -88,7 +105,7 @@ export default function TransferForm({
 
   return (
     <div className="panel form-panel">
-      <form onSubmit={handleTransfer}>
+      <form onSubmit={handleTransfer} noValidate>
         <div className="form-field">
           <label htmlFor="source">Source warehouse</label>
           <select
@@ -147,6 +164,7 @@ export default function TransferForm({
             id="t-quantity"
             type="number"
             min={1}
+            step={1}
             placeholder="0"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
