@@ -10,14 +10,16 @@ import {
 } from '@/lib/types'
 import StatusBadge from '@/components/StatusBadge'
 import LowStockSummary from '@/components/LowStockSummary'
+import { pickProducts, useLiveData } from '@/components/useLiveData'
 
 export default function InventoryTable({
-  products,
+  products: initialProducts,
   warehouses,
 }: {
   products: Product[]
   warehouses: Warehouse[]
 }) {
+  const [products] = useLiveData('/api/items', pickProducts, initialProducts)
   const categories = useMemo(
     () => Array.from(new Set(products.map((p) => p.category))).sort(),
     [products],

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Product, Warehouse } from '@/lib/types'
+import { pickProducts, useLiveData } from '@/components/useLiveData'
 
 export default function StockForm({
   products: initialProducts,
@@ -12,7 +13,11 @@ export default function StockForm({
   warehouses: Warehouse[]
 }) {
   const router = useRouter()
-  const [products, setProducts] = useState(initialProducts)
+  const [products, setProducts] = useLiveData(
+    '/api/items',
+    pickProducts,
+    initialProducts,
+  )
   const [productId, setProductId] = useState(initialProducts[0]?.id ?? '')
   const [quantity, setQuantity] = useState('')
   const [error, setError] = useState('')
