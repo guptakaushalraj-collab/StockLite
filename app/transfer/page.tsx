@@ -1,10 +1,12 @@
 import DashboardShell from '@/components/DashboardShell'
 import TransferForm from '@/components/TransferForm'
-import { products, warehouses } from '@/lib/seed-data'
+import { listProducts, warehouses } from '@/lib/store'
 
 export const dynamic = 'force-dynamic'
 
-export default function TransferPage() {
+export default async function TransferPage() {
+  const products = await listProducts()
+
   return (
     <DashboardShell>
       <div className="page-header">

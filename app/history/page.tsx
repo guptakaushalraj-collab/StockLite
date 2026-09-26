@@ -1,10 +1,12 @@
 import DashboardShell from '@/components/DashboardShell'
 import TransactionTable from '@/components/TransactionTable'
-import { transactions, warehouses } from '@/lib/seed-data'
+import { listTransactions, warehouses } from '@/lib/store'
 
 export const dynamic = 'force-dynamic'
 
-export default function HistoryPage() {
+export default async function HistoryPage() {
+  const transactions = await listTransactions()
+
   return (
     <DashboardShell>
       <div className="page-header">

@@ -1,10 +1,12 @@
 import DashboardShell from '@/components/DashboardShell'
 import StockForm from '@/components/StockForm'
-import { products, warehouses } from '@/lib/seed-data'
+import { listProducts, warehouses } from '@/lib/store'
 
 export const dynamic = 'force-dynamic'
 
-export default function StockPage() {
+export default async function StockPage() {
+  const products = await listProducts()
+
   return (
     <DashboardShell>
       <div className="page-header">

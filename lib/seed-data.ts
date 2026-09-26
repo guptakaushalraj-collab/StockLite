@@ -1,4 +1,11 @@
 import { Product, Transaction, TransactionType, Warehouse } from './types'
+import {
+  StockError,
+  assertCanAdd,
+  assertCanStockOut,
+  assertCanTransfer,
+  assertValidQuantity,
+} from './stock-rules'
 
 export const warehouses: Warehouse[] = [
   {
@@ -9,7 +16,7 @@ export const warehouses: Warehouse[] = [
   { id: 'wh-south', name: 'South Fulfillment Hub', location: 'Waco, TX' },
 ]
 
-const seedProducts: Product[] = [
+export const seedProducts: Product[] = [
   {
     id: 'p-001',
     name: 'Corrugated Shipping Box (M)',
@@ -173,7 +180,7 @@ const seedProducts: Product[] = [
 ]
 
 // A few sample transactions so the History page isn't empty on first load.
-const seedTransactions: Transaction[] = [
+export const seedTransactions: Transaction[] = [
   {
     id: 't-001',
     productId: 'p-002',
@@ -230,16 +237,17 @@ type Store = {
 const globalForStore = globalThis as typeof globalThis & {
   __stockliteStore?: Store
 }
+// Copies, so the exported seed data stays pristine for seeding Postgres.
 const store: Store = (globalForStore.__stockliteStore ??= {
-  products: seedProducts,
-  transactions: seedTransactions,
+  products: seedProducts.map((p) => ({ ...p })),
+  transactions: seedTransactions.map((t) => ({ ...t })),
   nextTransactionSeq: seedTransactions.length + 1,
 })
 
 export const products = store.products
 export const transactions = store.transactions
 
-function warehouseName(id: string) {
+export function warehouseName(id: string) {
   return warehouses.find((w) => w.id === id)?.name ?? id
 }
 
@@ -275,25 +283,6 @@ export function recordTransaction(input: {
 // TASK 2 — Stock In / Stock Out
 // -------------------------------------------------------------------------
 
-// Stock is counted in whole units, so a valid quantity is a positive integer.
-// Safe integers only: beyond 2^53 addition silently loses precision and the
-// stock totals would be wrong.
-export function assertValidQuantity(quantity: unknown): asserts quantity is number {
-  if (
-    typeof quantity !== 'number' ||
-    !Number.isSafeInteger(quantity) ||
-    quantity <= 0
-  ) {
-    throw new Error('Quantity must be a whole number greater than 0')
-  }
-}
-
-function assertCanAdd(product: Product, quantity: number) {
-  if (!Number.isSafeInteger(product.currentStock + quantity)) {
-    throw new Error('Quantity is too large for this product')
-  }
-}
-
 // Validates everything before touching the product, so a rejected movement
 // leaves stock unchanged and logs nothing.
 export function applyStockMovement(
@@ -302,15 +291,11 @@ export function applyStockMovement(
   direction: 'IN' | 'OUT',
 ): Product {
   const product = findProduct(productId)
-  if (!product) throw new Error('Product not found')
+  if (!product) throw new StockError('Product not found')
 
   assertValidQuantity(quantity)
-  if (direction === 'OUT' && quantity > product.currentStock) {
-    throw new Error(
-      `Only ${product.currentStock} in stock — cannot stock out ${quantity}`,
-    )
-  }
-  if (direction === 'IN') assertCanAdd(product, quantity)
+  if (direction === 'OUT') assertCanStockOut(product.currentStock, quantity)
+  else assertCanAdd(product.currentStock, quantity)
 
   product.currentStock += direction === 'IN' ? quantity : -quantity
 
@@ -356,23 +341,18 @@ export function applyTransfer(
   quantity: number,
 ): { source: Product; destination: Product } {
   const source = findProduct(productId)
-  if (!source) throw new Error('Source product not found')
+  if (!source) throw new StockError('Source product not found')
 
-  if (!warehouses.some((w) => w.id === destWarehouseId)) {
-    throw new Error('Destination warehouse not found')
-  }
-  if (destWarehouseId === source.warehouseId) {
-    throw new Error('Source and destination warehouses must be different')
-  }
-  assertValidQuantity(quantity)
-  if (quantity > source.currentStock) {
-    throw new Error(
-      `Only ${source.currentStock} in stock at the source — cannot transfer ${quantity}`,
-    )
-  }
+  assertCanTransfer(
+    source.warehouseId,
+    destWarehouseId,
+    warehouses.map((w) => w.id),
+    source.currentStock,
+    quantity,
+  )
 
   let destination = findProductInWarehouse(source, destWarehouseId)
-  if (destination) assertCanAdd(destination, quantity)
+  if (destination) assertCanAdd(destination.currentStock, quantity)
   if (!destination) {
     destination = {
       id: nextProductId(),

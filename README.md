@@ -52,7 +52,7 @@ None of the inventory logic (filtering, validation, stock mutation, transfers, o
 - **Language:** TypeScript
 - **Framework:** Next.js (App Router)
 - **UI:** React components
-- **Data storage:** Seeded in-memory store (`lib/seed-data.ts`)
+- **Data storage:** Postgres when `DATABASE_URL` is set, otherwise a seeded in-memory store (see [Data Storage](#data-storage))
 - **Package manager:** npm
 
 ## Getting Started
@@ -83,6 +83,31 @@ npm run dev
 
 Then open [http://localhost:3000](http://localhost:3000).
 
+## Data Storage
+
+StockLite picks its storage from the environment:
+
+- **No `DATABASE_URL` (default, local development):** data lives in memory, seeded from `lib/seed-data.ts`. Nothing to set up, but every restart resets it.
+- **`DATABASE_URL` (or `POSTGRES_URL`) set:** data lives in Postgres and persists across restarts, deploys and serverless cold starts. On the first request the app creates its tables and loads the seed data, so a new, empty database is all it needs.
+
+### Setting up a database on Vercel
+
+On Vercel, set up a database: the in-memory store is per serverless instance, so without one, changes on the live site can vanish or differ between page loads.
+
+1. Open your project in the Vercel dashboard and go to the **Storage** tab.
+2. Choose **Create Database**, pick **Neon** (Serverless Postgres), and connect it to this project. This adds `DATABASE_URL` to the project's environment variables.
+3. Redeploy. The first request creates the tables and seeds them.
+
+Any other Postgres works too: set `DATABASE_URL` to its connection string, and use the provider's pooled connection string when there is one.
+
+### Using Postgres locally
+
+```bash
+DATABASE_URL=postgres://user:password@localhost:5432/stocklite npm run dev
+```
+
+To start over from the seed data, drop the tables (`DROP TABLE transactions, products; DROP SEQUENCE product_id_seq, transaction_id_seq;`) and reload the app.
+
 ## Project Structure
 
 ```text
@@ -97,7 +122,10 @@ app/
     └── transactions/route.ts   # Stubbed transactions API
 components/                     # UI components (table, forms, status badge, nav)
 lib/
-├── seed-data.ts                # Seeded products, warehouses, transactions
+├── seed-data.ts                # Seed data + in-memory store
+├── db.ts                       # Postgres store (used when DATABASE_URL is set)
+├── store.ts                    # Picks the store; pages and API routes use this
+├── stock-rules.ts              # Validation shared by both stores
 ├── types.ts                    # Shared types
 └── auth.ts                     # Stubbed staff user
 ```

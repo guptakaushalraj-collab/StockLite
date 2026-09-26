@@ -5,7 +5,7 @@ import {
   IconTransfer,
   IconHistory,
 } from '@/components/Sidebar'
-import { products, warehouses } from '@/lib/seed-data'
+import { listProducts, warehouses } from '@/lib/store'
 import { isLowStock } from '@/lib/types'
 
 // Hero stats read the live store, so render per request.
@@ -39,7 +39,8 @@ const QUICK_LINKS = [
   },
 ]
 
-export default function HomePage() {
+export default async function HomePage() {
+  const products = await listProducts()
   const featured = warehouses[0]
   const featuredProducts = products.filter(
     (p) => p.warehouseId === featured?.id,
